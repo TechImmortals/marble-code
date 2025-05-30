@@ -64,7 +64,7 @@ class Game extends React.Component {
 
             this.animate();
             this.setState({ physicsReady: true });
-            this.start()
+            // this.start()
         } catch (error) {
             console.error('Initialization failed:', error);
         }
@@ -179,7 +179,7 @@ class Game extends React.Component {
             const loader = new GLTFLoader();
             loader.setDRACOLoader(this.dracoLoader.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/'));
 
-            const gltf = await loader.loadAsync('/models/track_05.glb',
+            const gltf = await loader.loadAsync('/models/track_08.glb',
                 progress => this.setState({
                     loadingProgress: (progress.loaded / progress.total) * 50
                 })
@@ -425,8 +425,7 @@ class Game extends React.Component {
                         this.balls.push(child)
                         this.scene.add(child)
                     }
-                    else
-                    {
+                    else {
                         child.castShadow = false;
                         child.receiveShadow = false;
                     }
@@ -555,8 +554,7 @@ class Game extends React.Component {
                         }
                     }
                     else {
-                        if (Math.abs(velocity.x) > 0.001 || Math.abs(velocity.y) > 0.001 || Math.abs(velocity.z) > 0.001)
-                        {
+                        if (Math.abs(velocity.x) > 0.001 || Math.abs(velocity.y) > 0.001 || Math.abs(velocity.z) > 0.001) {
                             this.scene.remove(this.dirLight);
                             this.ambientLight.target.position.copy(this.smoothLookAtTarget);
                             this.ambientLight.position.set(this.camera.position.x - 3, this.camera.position.y + 5, this.camera.position.z - 5);
@@ -708,7 +706,7 @@ class Game extends React.Component {
                         }
                         this.prevBallPos = ballPos.clone();
 
-                        const { closestPoint } = this.getClosestSplinePoint(ballPos, movementDir);
+                        const { closestPoint, tangent } = this.getClosestSplinePoint(ballPos, movementDir);
                         closestPoint.add(new THREE.Vector3(0, 0.5, 0));
 
                         this.smoothCameraPosition.lerp(closestPoint, 0.02);
@@ -717,11 +715,25 @@ class Game extends React.Component {
                             .add(new THREE.Vector3(0, -0.5, 0));
                         this.smoothLookAtTarget.lerp(lookTarget, 0.02);
 
+                        // 🎯 Compute the binormal and normal to represent the track's orientation
+                        const binormal = new THREE.Vector3().crossVectors(tangent, new THREE.Vector3(0, 1, 0)).normalize();
+                        const normal = new THREE.Vector3().crossVectors(binormal, tangent).normalize();
+
+                        // 🎯 Apply the tilt based on the track's normal vector
+                        // const tiltAngle = 0.1; // You can adjust this value for stronger tilt
+                        // const tiltedUp = new THREE.Vector3()
+                        //     .copy(normal)
+                        //     .applyAxisAngle(tangent, tiltAngle)
+                        //     .normalize();
+
+                        // // 🎯 Smooth transition of the camera's up vector for realistic motion
+                        // this.camera.up.lerp(tiltedUp, 0.05);
                         this.camera.position.copy(this.smoothCameraPosition);
                         this.camera.lookAt(this.smoothLookAtTarget);
                         this.controls.target.copy(this.smoothLookAtTarget);
                     }
                 }
+                console.log(this.camera.position, this.controls.target)
             }
 
         }
@@ -892,7 +904,7 @@ class Game extends React.Component {
             return { ball, score };
         });
 
-        if(!this.state.followFirstBall && this.state.selectedBall !== undefined) {
+        if (!this.state.followFirstBall && this.state.selectedBall !== undefined) {
             console.log(this.ballsPhysics[this.state.selectedBall])
             return [this.ballsPhysics[this.state.selectedBall]];
         }
