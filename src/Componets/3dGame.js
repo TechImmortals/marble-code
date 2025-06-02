@@ -29,7 +29,7 @@ class Game extends React.Component {
         this.dracoLoader = new DRACOLoader();
         this.ballGeometry = null;
         this.ballMaterial = null;
-        this.positionArr = [2, 3, 1, 5, 4, 6, 9, 8, 7, 10]
+        this.positionArr = [10, 10, 1, 10, 10, 10, 10, 10, 10, 10]
         this.trurrent = []
         this.trackCurve = null;
         this.prevPos = null
@@ -64,7 +64,7 @@ class Game extends React.Component {
 
             this.animate();
             this.setState({ physicsReady: true });
-            // this.start()
+            this.start()
         } catch (error) {
             console.error('Initialization failed:', error);
         }
@@ -529,29 +529,18 @@ class Game extends React.Component {
                     const isInsideCube31 = box31.containsPoint(ballPosition);
 
                     if ((!isInsideCube33 && !isInsideCube31)) {
-                        if (currentSpeed < desiredSpeed) {
-                            // Boost slower balls
-                            let forceMagnitude = 0.00045;
-                            let pos = 10 - ball.targetPosition;
-                            const positionBoost = pos * 0.00005;
-                            forceMagnitude += positionBoost;
+                        // Boost slower balls
+                        let forceMagnitude = 0.0005;
+                        let pos = 10 - ball.targetPosition;
+                        const positionBoost = pos * 0.0002;
+                        forceMagnitude += positionBoost;
 
-                            const force = new RAPIER.Vector3(
-                                direction.x * forceMagnitude,
-                                0,
-                                direction.z * forceMagnitude
-                            );
-                            ball.body.addForce(force);
-                        } else if (currentSpeed > desiredSpeed) {
-                            // Clamp faster balls
-                            const scale = desiredSpeed / currentSpeed;
-                            const newVelocity = new RAPIER.Vector3(
-                                velocity.x * scale,
-                                velocity.y, // Keep vertical component unchanged
-                                velocity.z * scale
-                            );
-                            ball.body.setLinvel(newVelocity, true);
-                        }
+                        const force = new RAPIER.Vector3(
+                            direction.x * forceMagnitude,
+                            0,
+                            direction.z * forceMagnitude
+                        );
+                        ball.body.addForce(force);
                     }
                     else {
                         if (Math.abs(velocity.x) > 0.001 || Math.abs(velocity.y) > 0.001 || Math.abs(velocity.z) > 0.001) {
