@@ -530,9 +530,9 @@ class Game extends React.Component {
 
                     if ((!isInsideCube33 && !isInsideCube31)) {
                         // Boost slower balls
-                        let forceMagnitude = 0.0005;
-                        let pos = 10 - ball.targetPosition;
-                        const positionBoost = pos * 0.0002;
+                        let forceMagnitude = 0.00045;
+                        let pos = 11 - ball.targetPosition;
+                        const positionBoost = pos * 0.000023;
                         forceMagnitude += positionBoost;
 
                         const force = new RAPIER.Vector3(
