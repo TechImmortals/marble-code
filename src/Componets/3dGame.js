@@ -29,7 +29,7 @@ class Game extends React.Component {
         this.dracoLoader = new DRACOLoader();
         this.ballGeometry = null;
         this.ballMaterial = null;
-        this.positionArr = [10, 10, 1, 10, 10, 10, 10, 10, 10, 10]
+        this.positionArr = [0, 0, 1, 0, 0, 0, 0, 0, 0, 0]; // Array to store positions of balls
         this.trurrent = []
         this.trackCurve = null;
         this.prevPos = null
@@ -514,7 +514,6 @@ class Game extends React.Component {
                 const direction = velVector.clone().normalize();
 
                 if (direction.lengthSq() > 0) { // Ensure movement is occurring
-                    const desiredSpeed = 5; // Target velocity magnitude (adjust as needed)
                     const velocity = ball.body.linvel(); // Current linear velocity
 
                     // Compute current horizontal speed (ignore y-axis)
@@ -529,18 +528,42 @@ class Game extends React.Component {
                     const isInsideCube31 = box31.containsPoint(ballPosition);
 
                     if ((!isInsideCube33 && !isInsideCube31)) {
-                        // Boost slower balls
-                        let forceMagnitude = 0.00045;
-                        let pos = 11 - ball.targetPosition;
-                        const positionBoost = pos * 0.000023;
-                        forceMagnitude += positionBoost;
+                        this.baseSpeed = 4; // Base speed for all balls
+                        this.winnerIndex = 2; // Index of ball that should win
+                        this.speedVariation = 0.2; // Natural speed variation
+                        const velocity = ball.body.linvel();
+                        const currentSpeed = new THREE.Vector3(velocity.x, 0, velocity.z).length();
 
-                        const force = new RAPIER.Vector3(
-                            direction.x * forceMagnitude,
-                            0,
-                            direction.z * forceMagnitude
-                        );
-                        ball.body.addForce(force);
+                        // Calculate target speed with natural variation
+                        let targetSpeed = this.baseSpeed;
+                        if (index === this.winnerIndex) {
+                            targetSpeed += this.speedVariation; // Winner is slightly faster
+                        } else {
+                            targetSpeed -= Math.random() * this.speedVariation; // Others vary naturally
+                        }
+
+                        // Apply gentle force to maintain speed
+                        if (currentSpeed < targetSpeed) {
+                            const direction = new THREE.Vector3(velocity.x, 0, velocity.z).normalize();
+                            const forceMagnitude = 0.0005 * (targetSpeed - currentSpeed);
+                            const force = new RAPIER.Vector3(
+                                direction.x * forceMagnitude,
+                                0,
+                                direction.z * forceMagnitude
+                            );
+                            ball.body.addForce(force);
+                        }
+
+                        // Prevent excessive speeds
+                        const maxSpeed = targetSpeed * 1.2;
+                        if (currentSpeed > maxSpeed) {
+                            const scale = maxSpeed / currentSpeed;
+                            ball.body.setLinvel(new RAPIER.Vector3(
+                                velocity.x * scale,
+                                velocity.y,
+                                velocity.z * scale
+                            ), true);
+                        }
                     }
                     else {
                         if (Math.abs(velocity.x) > 0.001 || Math.abs(velocity.y) > 0.001 || Math.abs(velocity.z) > 0.001) {
@@ -664,20 +687,6 @@ class Game extends React.Component {
                         }
                     } else {
                         // After 60s: resume velocity check & spline-follow
-                        let isStillStationary = false;
-
-                        for (const ball of this.ballsPhysics) {
-                            const pos = ball.body.translation();
-                            if (pos.y < -3) { // Ensure the ball is still in the zone
-                                const lv = ball.body.linvel();
-                                const speedSq = lv.x * lv.x + lv.y * lv.y + lv.z * lv.z;
-                                if (speedSq < 0.0001) {
-                                    isStillStationary = true;
-                                    break;
-                                }
-                            }
-                        }
-
                         // ball moved → reset and go back to spline-follow
                         this.stationaryBall = null;
                         this.originalStationaryBall = null;
@@ -695,7 +704,8 @@ class Game extends React.Component {
                         }
                         this.prevBallPos = ballPos.clone();
 
-                        const { closestPoint, tangent } = this.getClosestSplinePoint(ballPos, movementDir);
+                        this.index = null
+                        const { closestPoint, tangent, index } = this.getClosestSplinePoint(ballPos, movementDir);
                         closestPoint.add(new THREE.Vector3(0, 0.5, 0));
 
                         this.smoothCameraPosition.lerp(closestPoint, 0.02);
@@ -707,19 +717,12 @@ class Game extends React.Component {
                         // 🎯 Compute the binormal and normal to represent the track's orientation
                         const binormal = new THREE.Vector3().crossVectors(tangent, new THREE.Vector3(0, 1, 0)).normalize();
                         const normal = new THREE.Vector3().crossVectors(binormal, tangent).normalize();
-
-                        // 🎯 Apply the tilt based on the track's normal vector
-                        // const tiltAngle = 0.1; // You can adjust this value for stronger tilt
-                        // const tiltedUp = new THREE.Vector3()
-                        //     .copy(normal)
-                        //     .applyAxisAngle(tangent, tiltAngle)
-                        //     .normalize();
-
-                        // // 🎯 Smooth transition of the camera's up vector for realistic motion
-                        // this.camera.up.lerp(tiltedUp, 0.05);
-                        this.camera.position.copy(this.smoothCameraPosition);
-                        this.camera.lookAt(this.smoothLookAtTarget);
-                        this.controls.target.copy(this.smoothLookAtTarget);
+                        if (this.index !== index) {
+                            this.camera.position.copy(this.smoothCameraPosition);
+                            this.camera.lookAt(this.smoothLookAtTarget);
+                            this.controls.target.copy(this.smoothLookAtTarget);
+                            this.index = index;
+                        }
                     }
                 }
                 console.log(this.camera.position, this.controls.target)
@@ -838,7 +841,7 @@ class Game extends React.Component {
         const closestPoint = samples[closestIndex].clone();
         const secondPoint = samples[secondIndex].clone();
 
-        return { closestPoint, secondPoint, tangent: splineTangent, t0, t1 };
+        return { closestPoint, secondPoint, tangent: splineTangent, index: t0, t1 };
     }
 
 
