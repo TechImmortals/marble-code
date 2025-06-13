@@ -529,17 +529,17 @@ class Game extends React.Component {
 
                     if ((!isInsideCube33 && !isInsideCube31)) {
                         this.baseSpeed = 4; // Base speed for all balls
-                        this.winnerIndex = 2; // Index of ball that should win
-                        this.speedVariation = 0.2; // Natural speed variation
+                        this.speedVariation = 0.5; // Natural speed variation
                         const velocity = ball.body.linvel();
                         const currentSpeed = new THREE.Vector3(velocity.x, 0, velocity.z).length();
 
                         // Calculate target speed with natural variation
                         let targetSpeed = this.baseSpeed;
-                        if (index === this.winnerIndex) {
+                        console.log(ball.targetPosition === 1, index)
+                        if (ball.targetPosition === 1) {
                             targetSpeed += this.speedVariation; // Winner is slightly faster
                         } else {
-                            targetSpeed -= Math.random() * this.speedVariation; // Others vary naturally
+                            targetSpeed -= this.speedVariation; // Others vary naturally
                         }
 
                         // Apply gentle force to maintain speed
@@ -572,7 +572,7 @@ class Game extends React.Component {
                             this.ambientLight.position.set(this.camera.position.x - 3, this.camera.position.y + 5, this.camera.position.z - 5);
                             this.ambientLight.target.updateMatrixWorld();
                             this.scene.add(this.ambientLight);
-                            const force = new RAPIER.Vector3(0.01, 0, 0);
+                            const force = new RAPIER.Vector3(0.03, -0.04, 0.02);
                             ball.body.addForce(force);
                         }
                     }
