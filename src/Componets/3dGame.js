@@ -496,6 +496,7 @@ class Game extends React.Component {
         if (this.dirLight) {
             this.dirLight.position.copy(this.camera.position);
             this.dirLight.target.position.copy(this.smoothLookAtTarget);
+            this.dirLight.castShadow = false;
             this.dirLight.target.updateMatrixWorld();
         }
 
@@ -529,7 +530,18 @@ class Game extends React.Component {
 
                     if ((!isInsideCube33 && !isInsideCube31)) {
                         this.baseSpeed = 4; // Base speed for all balls
-                        this.speedVariation = 0.5; // Natural speed variation
+                        if(index > 4 && ball.targetPosition === 1)
+                        {
+                            this.speedVariation = 0.5; // Natural speed variation
+                        }
+                        else if (index <= 4 && ball.targetPosition === 1) // First 5 balls
+                        {
+                            this.speedVariation = 0.5; // Natural speed variation
+                        }
+                        else
+                        {
+                            this.speedVariation = 0.5; // No variation for non-target balls
+                        }
                         const velocity = ball.body.linvel();
                         const currentSpeed = new THREE.Vector3(velocity.x, 0, velocity.z).length();
 
@@ -571,8 +583,9 @@ class Game extends React.Component {
                             this.ambientLight.target.position.copy(this.smoothLookAtTarget);
                             this.ambientLight.position.set(this.camera.position.x - 3, this.camera.position.y + 5, this.camera.position.z - 5);
                             this.ambientLight.target.updateMatrixWorld();
+                            this.ambientLight.castShadow = false;
                             this.scene.add(this.ambientLight);
-                            const force = new RAPIER.Vector3(0.03, -0.04, 0.02);
+                            const force = new RAPIER.Vector3(0.03, -0.05, 0.01);
                             ball.body.addForce(force);
                         }
                     }
